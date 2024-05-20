@@ -9,6 +9,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import cn.hutool.core.io.FileUtil;
+import com.sanluan.einvoice.service.ImageUtil;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.RequestConfig;
@@ -19,6 +21,8 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.dom4j.DocumentException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -41,6 +45,8 @@ public class InvoiceController {
     public static final RequestConfig defaultRequestConfig = RequestConfig.custom().setSocketTimeout(5000).setConnectTimeout(5000)
             .setConnectionRequestTimeout(5000).build();
 
+    Logger logger = LoggerFactory.getLogger(InvoiceController.class);
+
     /**
      * @param pattern
      * @return date format
@@ -61,6 +67,15 @@ public class InvoiceController {
 
     @RequestMapping(value = "/extrat")
     public Invoice extrat(@RequestParam(value = "file", required = false) MultipartFile file, String url) {
+        File image = FileUtil.file("/Users/bigmoon/d/file/temp/aaa.jpg");
+        File pdf = FileUtil.file("/Users/bigmoon/d/file/temp/aaa.pdf");
+        try {
+            FileUtil.writeFromStream(file.getInputStream(), image);
+            ImageUtil.imageToPdf(image, pdf);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         String fileName = getDateFormat(FILE_NAME_FORMAT_STRING).format(new Date());
         File dest = null;
         boolean ofd = false;
@@ -95,8 +110,10 @@ public class InvoiceController {
                     }
                 }
             } catch (Exception e) {
+                logger.error(e.getMessage(), e);
             }
         }
+        dest = pdf;
         Invoice result = null;
         try {
             if (null != dest) {
